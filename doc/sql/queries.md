@@ -81,9 +81,20 @@ JOIN profiles p ON p.user_id = u.id
 SET u.name = @name, p.bio = @bio
 WHERE u.id = @id;
 
+-- UPDATE ... FROM (PostgreSQL, SQLite)
+UPDATE entry SET created_at = person.created_at
+FROM person
+WHERE entry.id = person.id;
+
 -- UPDATE with expressions
 UPDATE users SET age = age + @increment WHERE id = @id;
 ```
+
+In `UPDATE ... FROM`, only the target table is assignable; the `FROM` tables just
+supply values. An unqualified name on the left of `=` therefore always means a column
+of the target, even when a `FROM` table has one of the same name, and assigning to a
+`FROM` table is an error. PostgreSQL has no `ORDER BY` or `LIMIT` on `UPDATE`, so
+neither is accepted alongside `FROM`.
 
 ## DELETE
 

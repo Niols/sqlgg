@@ -139,6 +139,10 @@ let check ~file (stmt : Statements.t) =
       | Sql.Insert { action = `Select (_, { select_complete = { select = (core, _); _ }; cte }); _ } -> scope ?cte core.from
       | Sql.Update (table, _, _, _, _) | Sql.Delete (table, _) -> scope (Some (of_table table))
       | Sql.UpdateMulti (from, _, _, _, _) -> scope (Some from)
+      | Sql.UpdateFrom (table, _, from, _) ->
+        (* the target is assignable and the FROM sources readable: both in scope *)
+        let join = ((`Nested from, None), Sql.dummy_loc Sql.Schema.Join.Inner, Sql.Schema.Join.Default) in
+        scope (Some ((`Table table, None), [ Sql.dummy_loc join ]))
       | Sql.DeleteMulti (_, tables, _) -> scope (Some tables)
       | Sql.Insert { action = (`Set _ | `Values _ | `Param _); _ }
       | Sql.Create _ | Sql.Drop _ | Sql.Alter _ | Sql.Rename _ | Sql.CreateIndex _ | Sql.Set _
