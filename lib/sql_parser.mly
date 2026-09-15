@@ -48,7 +48,7 @@
        SHARED EXCLUSIVE NONE
        TTL TTL_ENABLE REMOVE CACHE NOCACHE
 %token FUNCTION PROCEDURE LANGUAGE RETURNS OUT INOUT BEGIN COMMENT
-%token <string> EXTENSION SCHEMA VERSION VALUE
+%token <string> EXTENSION SCHEMA VERSION VALUE BEFORE
 %token SECOND_MICROSECOND MINUTE_MICROSECOND MINUTE_SECOND
        HOUR_MICROSECOND HOUR_SECOND HOUR_MINUTE
        DAY_MICROSECOND DAY_SECOND DAY_MINUTE DAY_HOUR EXTRACT
@@ -217,7 +217,7 @@ statement: CREATE ioption(temporary) TABLE ioption(if_not_exists) name=located(t
               { DropType (name, ie) }
          | ALTER TYPE name=ident RENAME TO new_name=ident
               { AlterType (name, Type_rename_to new_name) }
-         | ALTER TYPE name=ident ADD VALUE ine=boption(if_not_exists) v=TEXT
+         | ALTER TYPE name=ident ADD VALUE ine=boption(if_not_exists) v=TEXT add_value_pos?
               { AlterType (name, Type_add_value { value = v; if_not_exists = ine }) }
 
 parameter_default_: DEFAULT | EQUAL { }
@@ -230,6 +230,12 @@ or_replace: OR REPLACE { }
 
 (* CREATE EXTENSION options: sqlgg tracks no extension state, so these are
    accepted and discarded. Order is left loose on purpose. *)
+(* PostgreSQL can place a new enum value relative to an existing one. sqlgg
+   keeps enum constructors in an unordered set, so there is nowhere to put the
+   position: it is accepted and discarded. Nothing serializes ALTER TYPE back to
+   SQL, so no round trip loses it. *)
+add_value_pos: either(BEFORE,AFTER) TEXT { }
+
 create_extension_opts: WITH? create_extension_opt* { }
 create_extension_opt: SCHEMA ident { }
                     | VERSION extension_version { }
@@ -244,7 +250,7 @@ routine_extra: LANGUAGE IDENT { }
 
 (* cf. ColId / unreserved_keyword in PostgreSQL's gram.y (TYPE_P is unreserved there too):
    https://github.com/postgres/postgres/blob/REL_18_0/src/backend/parser/gram.y#L17632 *)
-ident: x=IDENT | x=TYPE | x=EXTENSION | x=SCHEMA | x=VERSION | x=VALUE { x }
+ident: x=IDENT | x=TYPE | x=EXTENSION | x=SCHEMA | x=VERSION | x=VALUE | x=BEFORE { x }
 
 table_ident: x=ident { x }
 qual_ident: x=ident { x }

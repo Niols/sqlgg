@@ -29,6 +29,7 @@ let keywords =
    "asc",ASC;
    "ascii",ASCII;
    "begin", BEGIN;
+   "before", BEFORE "before";
    "between",BETWEEN;
    "binary",BINARY;
    "by",BY;
