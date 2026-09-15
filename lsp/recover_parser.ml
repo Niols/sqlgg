@@ -24,7 +24,7 @@ let position offset = { Lexing.dummy_pos with pos_cnum = offset }
 
 let ident_name : Sql_tokens.token -> string option = function
   | IDENT name | TYPE name | EXTENSION name | SCHEMA name | VERSION name
-  | VALUE name ->
+  | VALUE name | BEFORE name ->
     Some name
   | _ -> None
 

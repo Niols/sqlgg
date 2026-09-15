@@ -146,6 +146,9 @@ SELECT * FROM tune WHERE kind = 'Air';
 Only columns declared with that named type are affected; an inline `ENUM(...)` column
 is not. Without `IF NOT EXISTS`, adding a value the type already has is an error.
 
+PostgreSQL's `BEFORE`/`AFTER` placement is accepted and discarded: sqlgg keeps enum
+constructors in an unordered set, so a new value is added but not placed.
+
 `ALTER TYPE ... RENAME TO` rekeys the type registry, so the type is known under its
 new name from then on:
 
