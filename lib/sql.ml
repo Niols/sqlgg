@@ -1100,6 +1100,7 @@ type create_type_target =
 
 type alter_type_action =
   | Type_rename_to of string
+  | Type_add_value of { value : string; if_not_exists : bool }
   [@@deriving show {with_path=false}]
 
 type stmt =

@@ -168,6 +168,7 @@ let keywords =
    "unsigned",UNSIGNED;
    "update",UPDATE;
    "using",USING;
+   "value", VALUE "value";
    "values",VALUES;
    "varying",VARYING;
    "version", VERSION "version";

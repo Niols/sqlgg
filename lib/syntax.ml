@@ -2086,6 +2086,11 @@ let rec eval (stmt:Sql.stmt) =
      User_types.rename name new_name;
      (* the old name is the subject, as `Rename does for tables *)
      [], [], AlterType name, no_stmt_annotations
+  | AlterType (name, Type_add_value { value; if_not_exists }) ->
+     let kind = User_types.add_value ~if_not_exists name value in
+     (* columns declared with this type follow it *)
+     Tables.refresh_user_type name ~kind;
+     [], [], AlterType name, no_stmt_annotations
   | CreateExtension _ | DropExtension _ ->
      (* sqlgg keeps no extension state: accepted, and invisible to codegen *)
      [], [], Other, no_stmt_annotations

@@ -238,7 +238,7 @@ let make (document : Document.t) offset =
            step with [ident]. *)
         let is_unreserved = function
           | Sql_tokens.TYPE _ | Sql_tokens.EXTENSION _ | Sql_tokens.SCHEMA _
-          | Sql_tokens.VERSION _ -> true
+          | Sql_tokens.VERSION _ | Sql_tokens.VALUE _ -> true
           | _ -> false
         in
         let keywords =
