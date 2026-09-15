@@ -34,7 +34,7 @@ The type is usable under its new name afterwards
   > EOF
   ==> CREATE TABLE t (c k1 NOT NULL)
   Position 1:24 Tokens: NOT NULL)
-  Error: Not_found
+  Error: no such type "k1"
   Errors encountered, no code generated
   [1]
 

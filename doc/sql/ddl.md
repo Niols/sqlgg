@@ -131,6 +131,16 @@ DROP TYPE mood;
 
 Enum types get the same treatment as inline `ENUM(...)` columns. See [Literals](./literals.md) for enum literal validation and the OCaml mapping to polymorphic variants.
 
+A user-defined type is also accepted as a `CAST` target, which is how PostgreSQL
+converts between enums:
+
+```sql
+ALTER TABLE tune ALTER COLUMN kind TYPE kind_new USING CAST(CAST(kind AS TEXT) AS kind_new);
+```
+
+(PostgreSQL's `kind::TEXT::kind_new` shorthand for the same thing is not supported:
+`::` already annotates parameter types in sqlgg.)
+
 `ALTER TYPE ... ADD VALUE` adds a constructor to an enum type. Columns already
 declared with that type follow it, so queries written after the ALTER may use the
 new value:
