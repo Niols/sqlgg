@@ -201,3 +201,36 @@ CREATE TYPE in both schemas must not clash as a duplicate
   -- [sqlgg] id=20260101000000_alter_t_add_col_extra
   ALTER TABLE `t` ADD COLUMN `extra` INT;
   ALTER TABLE `t` DROP COLUMN `extra`;
+
+A column declared with a user-defined type records the type by name, so a
+migration that adds it re-emits the type instead of inlining its definition
+  $ cat > enum_base.sql <<'EOF'
+  > CREATE TYPE kind AS ENUM ('Jig', 'Reel');
+  > CREATE TABLE tune (id INTEGER NOT NULL);
+  > EOF
+  $ cat > enum_target.sql <<'EOF'
+  > CREATE TYPE kind AS ENUM ('Jig', 'Reel');
+  > CREATE TABLE tune (id INTEGER NOT NULL, k kind NOT NULL);
+  > EOF
+  $ sqlgg -no-header -dialect postgresql -diff -now 20260101000000 -gen sql -base enum_base.sql -target enum_target.sql
+  -- [sqlgg] generated
+  -- [sqlgg] id=20260101000000_alter_tune_add_col_k
+  ALTER TABLE `tune` ADD COLUMN `k` kind NOT NULL;
+  ALTER TABLE `tune` DROP COLUMN `k`;
+
+Recording the name does not change how the column is typed: it is still the
+enum it resolved to at declaration time
+  $ sqlgg -gen none -dialect=postgresql - <<'EOF' 2>&1
+  > CREATE TYPE k AS ENUM ('a', 'b');
+  > CREATE TABLE t (c k NOT NULL);
+  > SELECT c FROM t WHERE c = 'a';
+  > EOF
+
+  $ sqlgg -gen none -dialect=postgresql - <<'EOF' 2>&1
+  > CREATE TYPE k AS ENUM ('a', 'b');
+  > CREATE TABLE t (c k NOT NULL);
+  > SELECT c FROM t WHERE c = 'z';
+  > EOF
+  Failed : SELECT c FROM t WHERE c = 'z'
+  Fatal error: exception Failure("types Union (a| b) and StringLiteral (z) for 'a do not match in 'a -> 'a -> Bool?? applied to (Union (a| b), StringLiteral (z))")
+  [2]

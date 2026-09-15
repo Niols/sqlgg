@@ -799,7 +799,7 @@ sql_type_flavor_plain:
   | NATIONAL? f=text_plain charset?                     { Source_type.Text f }
   | t=expr_sql_type_flavor { Source_type.Infer t }
   | ENUM ctors=sequence(TEXT) charset? { Source_type.Infer (make_enum_kind ctors) }
-  | name=ident { Source_type.Infer (User_types.get name) }
+  | name=ident { Source_type.User_type (name, User_types.get name) }
 
 type_args: LPAREN INTEGER RPAREN UNSIGNED? | LPAREN INTEGER COMMA INTEGER RPAREN { }
 

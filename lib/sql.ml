@@ -595,6 +595,11 @@ module Source_type = struct
     [@@deriving show, eq]
 
   type kind = Infer of Type.kind
+    (* A user-defined type, by name, together with the definition it resolved to
+       at declaration time. Keeping the name lets ALTER TYPE find the columns
+       declared with it, and lets migrations re-emit the type rather than
+       inlining its definition. *)
+    | User_type of string * Type.kind
     | Int of { size : int_size option; sign : signedness; display_width : int option }
     | Float of float_precision
     | Blob of blob_flavor
@@ -609,6 +614,7 @@ module Source_type = struct
   let nullable = nullability Type.Nullable
 
   let kind_to_type_kind = function
+    | User_type (_, ty) -> ty
     | Infer ty -> ty
     | Int { size = Some Big; sign = Unsigned; _ } -> Type.UInt64
     | Int _ -> Type.Int
