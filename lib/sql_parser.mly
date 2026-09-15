@@ -215,6 +215,8 @@ statement: CREATE ioption(temporary) TABLE ioption(if_not_exists) name=located(t
               { CreateType (name, TypeEnum ctors) }
          | DROP TYPE ie=boption(if_exists) name=ident
               { DropType (name, ie) }
+         | ALTER TYPE name=ident RENAME TO new_name=ident
+              { AlterType (name, Type_rename_to new_name) }
 
 parameter_default_: DEFAULT | EQUAL { }
 parameter_default: parameter_default_ e=expr { e }

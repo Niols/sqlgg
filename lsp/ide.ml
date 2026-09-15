@@ -251,6 +251,7 @@ module Markdown = struct
     | Stmt.CreateIndex name -> "CREATE INDEX " ^ name
     | Stmt.CreateRoutine t -> "CREATE ROUTINE " ^ Sql.show_table_name t
     | Stmt.CreateType name -> "CREATE TYPE " ^ name
+    | Stmt.AlterType name -> "ALTER TYPE " ^ name
     | Stmt.DropType name -> "DROP TYPE " ^ name
     | Stmt.Alter l -> "ALTER " ^ tables l
     | Stmt.Drop t -> "DROP " ^ Sql.show_table_name t

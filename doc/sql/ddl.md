@@ -131,6 +131,15 @@ DROP TYPE mood;
 
 Enum types get the same treatment as inline `ENUM(...)` columns. See [Literals](./literals.md) for enum literal validation and the OCaml mapping to polymorphic variants.
 
+`ALTER TYPE ... RENAME TO` rekeys the type registry, so the type is known under its
+new name from then on:
+
+```sql
+ALTER TYPE kind_new RENAME TO kind;
+```
+
+Columns declared before the rename keep the constructors they were given.
+
 ## CREATE EXTENSION (PostgreSQL)
 
 `CREATE EXTENSION` and `DROP EXTENSION` are accepted with `-dialect postgresql` so that

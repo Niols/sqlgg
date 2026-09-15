@@ -2082,6 +2082,10 @@ let rec eval (stmt:Sql.stmt) =
   | DropType (name, if_exists) ->
      User_types.drop ~if_exists name;
      [], [], DropType name, no_stmt_annotations
+  | AlterType (name, Type_rename_to new_name) ->
+     User_types.rename name new_name;
+     (* the old name is the subject, as `Rename does for tables *)
+     [], [], AlterType name, no_stmt_annotations
   | CreateExtension _ | DropExtension _ ->
      (* sqlgg keeps no extension state: accepted, and invisible to codegen *)
      [], [], Other, no_stmt_annotations

@@ -14,6 +14,7 @@ let kind_name (kind : Sqlgg_traits.Query.kind) =
   | Drop table -> "drop " ^ table
   | CreateRoutine name -> "create routine " ^ name
   | CreateType name -> "create type " ^ name
+  | AlterType name -> "alter type " ^ name
   | DropType name -> "drop type " ^ name
   | Other -> "other"
 

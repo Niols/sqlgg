@@ -1092,6 +1092,10 @@ type create_type_target =
   | TypeEnum of string list
   [@@deriving show {with_path=false}]
 
+type alter_type_action =
+  | Type_rename_to of string
+  [@@deriving show {with_path=false}]
+
 type stmt =
   | Create of table_name located * create_target
   | Drop of table_name
@@ -1108,6 +1112,7 @@ type stmt =
   | CreateRoutine of table_name * Source_type.kind collated located option * (string * Source_type.kind collated located * expr option) list (* table_name represents possibly namespaced function name *)
   | CreateType of string * create_type_target
   | DropType of string * bool
+  | AlterType of string * alter_type_action
   | CreateExtension of string
   | DropExtension of string list
   [@@deriving show {with_path=false}]

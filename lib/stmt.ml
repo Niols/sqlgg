@@ -22,6 +22,7 @@ type kind = | Select of cardinality
             | Drop of Sql.table_name
             | CreateRoutine of Sql.table_name (** namespaced function name *)
             | CreateType of string
+            | AlterType of string
             | DropType of string
             | Other
             [@@deriving show {with_path=false}]
@@ -41,6 +42,7 @@ let category_of_stmt_kind = function
 | Alter _
 | Drop _
 | CreateType _
+| AlterType _
 | DropType _ -> DDL
 | Other -> OTHER
 
@@ -49,4 +51,4 @@ let dml_tables = function
 | Update (Some table) -> [ table ]
 | Delete tables -> tables
 | Select _ | Create _ | CreateIndex _ | Update None | Alter _ | Drop _
-| CreateRoutine _ | CreateType _ | DropType _ | Other -> []
+| CreateRoutine _ | CreateType _ | AlterType _ | DropType _ | Other -> []

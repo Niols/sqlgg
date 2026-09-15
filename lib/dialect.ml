@@ -489,5 +489,6 @@ let rec analyze stmt =
       process_params acc params
   | CreateType _ -> [get_user_defined_type (0, 0)]
   | DropType _ -> [get_user_defined_type (0, 0)]
+  | AlterType _ -> [get_user_defined_type (0, 0)]
   | CreateExtension _ -> [get_extension (0, 0)]
   | DropExtension _ -> [get_extension (0, 0)]
