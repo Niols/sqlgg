@@ -151,7 +151,7 @@ statement: CREATE ioption(temporary) TABLE ioption(if_not_exists) name=located(t
               {
                 Drop name
               }
-         | CREATE u=boption(UNIQUE) INDEX if_not_exists? name=ident ON table=table_name cols=sequence(index_column)
+         | CREATE u=boption(UNIQUE) INDEX if_not_exists? name=ident ON table=table_name index_method? cols=sequence(index_column)
               {
                 let ci_kind = if u then Sql.Unique_idx else Sql.Plain_idx in
                 CreateIndex { ci_name = name; ci_table = table; ci_cols = cols; ci_kind }
@@ -253,7 +253,12 @@ func_ident: x=ident { x }
 %inline func_name: name=func_ident { Sql.make_table_name name }
                  | db=qual_ident DOT name=ident { Sql.make_table_name ~db name }
 index_prefix: LPAREN n=INTEGER RPAREN { n }
-index_column: name=ident index_prefix? c=collate? order_type? { make_collated ?collation:c ~collated:name ()}
+index_column: name=ident index_prefix? c=collate? index_opclass? order_type? { make_collated ?collation:c ~collated:name ()}
+
+(* PostgreSQL index access method and per-column operator class. sqlgg does not
+   use either, so both are accepted and discarded. *)
+index_method: USING ident { }
+index_opclass: ident { } | ident DOT ident { }
 
 table_definition: t=sequence_(column_def1) ignore_after(RPAREN) 
                       { 

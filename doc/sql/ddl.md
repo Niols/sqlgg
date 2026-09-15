@@ -94,6 +94,18 @@ ALTER TABLE entry RENAME CONSTRAINT globally_unique_id_pkey TO pk_entry;
 
 Dialect-specific forms such as PostgreSQL `ALTER COLUMN ... TYPE` or TiDB `TTL` are checked against [`-dialect`](./dialects.md).
 
+## CREATE INDEX
+
+An index access method and per-column operator classes are accepted:
+
+```sql
+CREATE INDEX idx_person_name ON person USING GIN (name public.gin_trgm_ops);
+```
+
+sqlgg records which columns an index covers, but not the access method or the
+operator classes, so those are only checked for syntax. The indexed columns are
+still resolved against the table.
+
 ## CREATE TYPE (PostgreSQL)
 
 User-defined enum types are supported with `-dialect postgresql` and can be used as column types:
