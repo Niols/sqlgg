@@ -67,6 +67,8 @@ let choose_name props kind index =
   | Other -> sprintf "statement_%u" index
   | CreateType n -> sprintf "create_type_%s" (fix' n)
   | DropType n -> sprintf "drop_type_%s" (fix' n)
+  (* indexed: a type can be altered repeatedly, unlike created or dropped *)
+  | AlterType n -> sprintf "alter_type_%s_%u" (fix' n) index
   in
   make_name props name
 

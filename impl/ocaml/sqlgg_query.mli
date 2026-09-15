@@ -11,6 +11,7 @@ type kind =
   | Drop of string
   | CreateRoutine of string
   | CreateType of string
+  | AlterType of string
   | DropType of string
   | Other
 

@@ -137,6 +137,7 @@ let generate_code (x,_) index stmt =
     | CreateRoutine s  -> ["kind", "create_routine"; "target", Sql.show_table_name s]
     | Other            -> ["kind", "other"]
     | CreateType n     -> ["kind", "create_type"; "target", n; "cardinality", "0"]
+    | AlterType n      -> ["kind", "alter_type"; "target", n; "cardinality", "0"]
     | DropType n       -> ["kind", "drop_type"; "target", n; "cardinality", "0"]
   in
   let nodes = [ input; output] in

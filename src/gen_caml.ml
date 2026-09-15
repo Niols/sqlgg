@@ -280,6 +280,7 @@ let query_expr ~sql index stmt =
     | Stmt.Drop t -> k "Drop %s" (table t)
     | Stmt.CreateRoutine t -> k "CreateRoutine %s" (table t)
     | Stmt.CreateType s -> k "CreateType %s" (quote s)
+    | Stmt.AlterType s -> k "AlterType %s" (quote s)
     | Stmt.DropType s -> k "DropType %s" (quote s)
     | Stmt.Other -> "Sqlgg_traits.Query.Other"
   in
