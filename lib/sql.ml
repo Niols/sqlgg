@@ -1115,6 +1115,9 @@ type stmt =
   | Set of (string * expr) list * stmt option
   | Update of table_name * assignments * expr option * order * Source_type.t param list (* where, order, limit *)
   | UpdateMulti of nested * assignments * expr option * order * Source_type.t param list (* where, order, limit *)
+  (* PostgreSQL/SQLite UPDATE ... SET ... FROM ...: only the first table is
+     assignable, the nested sources only supply values *)
+  | UpdateFrom of table_name * assignments * nested * expr option
   | Select of select_full
   | CreateRoutine of table_name * Source_type.kind collated located option * (string * Source_type.kind collated located * expr option) list (* table_name represents possibly namespaced function name *)
   | CreateType of string * create_type_target

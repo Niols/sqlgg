@@ -35,6 +35,7 @@ type feature =
   | UserDefinedType [@as "user_defined_type"]
   | Extension [@as "extension"]
   | RenameConstraint [@as "rename_constraint"]
+  | UpdateFrom [@as "update_from"]
 [@@deriving show { with_path = false }, enumerate, to_string, of_string]
 
 let show_feature x = 
@@ -158,6 +159,9 @@ let get_user_defined_type pos = only UserDefinedType [PostgreSQL] pos
 let get_extension pos = only Extension [PostgreSQL] pos
 
 let get_rename_constraint pos = only RenameConstraint [PostgreSQL] pos
+
+(* SQLite has had UPDATE ... FROM since 3.33 *)
+let get_update_from pos = only UpdateFrom [PostgreSQL; SQLite] pos
 
 let get_default_expr ~kind ~expr pos =
   let open Sql in
@@ -465,6 +469,12 @@ let rec analyze stmt =
       analyze_assignment_expr acc aes (fun acc ->
         let exprs = option_list where_opt @ List.map fst order in
         analyze_expr acc exprs List.rev)
+  | UpdateFrom (_, assignments, from, where_opt) ->
+      let acc = get_update_from (0, 0) :: acc in
+      analyze_nested acc [from] (fun acc ->
+        let aes = List.map snd assignments in
+        analyze_assignment_expr acc aes (fun acc ->
+          analyze_expr acc (option_list where_opt) List.rev))
   | UpdateMulti (from, assignments, where_opt, order, _) ->
       analyze_nested acc [from] (fun acc ->
         let aes = List.map snd assignments in

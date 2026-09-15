@@ -174,11 +174,27 @@ statement: CREATE ioption(temporary) TABLE ioption(if_not_exists) name=located(t
                 Insert { insert_action_kind; target; action=`Set set; on_conflict_clause=ss; }
               }
          /* http://dev.mysql.com/doc/refman/5.1/en/update.html multi-table syntax */
-         | update_cmd tables=table_list SET ss=commas(set_column) w=where? o=loption(order) lim=loption(limit)
+         | update_cmd tables=table_list SET ss=commas(set_column) from=update_from? w=where? o=option(order) lim=option(limit)
               {
-                match tables with
-                | (`Table table, None), [] -> Update (table,ss,w,o,lim)
-                | _ -> UpdateMulti (tables,ss,w,o,lim)
+                let order = Stdlib.Option.value ~default:[] o in
+                let limit = Stdlib.Option.value ~default:[] lim in
+                match from with
+                | None ->
+                  begin match tables with
+                  | (`Table table, None), [] -> Update (table,ss,w,order,limit)
+                  | _ -> UpdateMulti (tables,ss,w,order,limit)
+                  end
+                | Some from ->
+                  (* PostgreSQL has no ORDER BY / LIMIT on UPDATE. Test for the
+                     clauses rather than for the parameters they contribute: a
+                     constant LIMIT 1 contributes none. *)
+                  match o, lim with
+                  | (Some _, _) | (_, Some _) ->
+                    failwith "UPDATE ... FROM does not support ORDER BY or LIMIT"
+                  | None, None ->
+                    match tables with
+                    | (`Table table, None), [] -> UpdateFrom (table, ss, from, w)
+                    | _ -> failwith "UPDATE ... FROM updates a single table"
               }
          | DELETE FROM table=table_name w=where?
               {
@@ -347,6 +363,8 @@ source: src=source1 alias=source_alias? {
 insert_cmd:  INSERT DELAYED? OR? conflict_algo INTO { Insert_into }
            | INSERT INTO { Insert_into }
            | REPLACE INTO { Replace_into ($startofs, $endofs) }
+update_from: FROM l=table_list { l }
+
 update_cmd: UPDATE | UPDATE OR conflict_algo { }
 conflict_algo: CONFLICT_ALGO | REPLACE { }
 

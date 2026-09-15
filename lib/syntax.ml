@@ -1686,6 +1686,28 @@ let update_tables ~env sources ss w =
   p0 @ p1 @ p2,
   List.fold_left merge_stmt_annotations source_annotations [ assign_annotations; where_annotations ]
 
+(* PostgreSQL's UPDATE ... FROM: the SET left-hand sides name columns of the
+   target table, while the right-hand sides and the WHERE clause may read the
+   FROM sources as well. Resolving the assignments against the target alone is
+   also what keeps an unqualified name that exists in both the target and a
+   source (entry.created_at and person.created_at, say) unambiguous, and what
+   rejects assigning to a source column. *)
+let update_from_tables ~env ~target sources ss w =
+  let exprs = resolve_column_assignments ~env:{ env with tables = target.rsrc_tables } ss in
+  let schema = Schema.cross_all @@ List.map (fun src -> src.rsrc_schema) sources in
+  let p0 = List.flatten @@ List.map (fun src -> src.rsrc_params) sources in
+  let tables = List.flatten @@ List.map (fun src -> src.rsrc_tables) sources in
+  let env = { env with tables; schema } in
+  let (p1, assign_annotations) = get_params_l env exprs in
+  let (p2, where_annotations) = get_params_opt { env with set_tyvar_strict = true } w in
+  let source_annotations =
+    List.fold_left (fun annotations src ->
+      merge_stmt_annotations annotations src.rsrc_annotations)
+      no_stmt_annotations sources
+  in
+  p0 @ p1 @ p2,
+  List.fold_left merge_stmt_annotations source_annotations [ assign_annotations; where_annotations ]
+
 let annotate_select select attrs =
   let (select1,compound) = select.select in
   let apply_to_columns cols attrs =
@@ -2070,6 +2092,27 @@ let rec eval (stmt:Sql.stmt) =
     let lim = List.map (fun p -> make_param ~id:p.id ~typ:(Source_type.to_infer_type p.typ)) lim in
     [], params @ p3 @ List.map (fun p -> Single (p, Meta.empty())) lim, Update None,
     merge_stmt_annotations annotations order_annotations
+  | UpdateFrom (table,ss,from,w) ->
+    let f, s = Tables.get table in
+    let env = { empty_env with is_update = true } in
+    (* PostgreSQL assigns to the target only; catch a qualified assignment to a
+       FROM table with a message that says so, rather than "no such table" *)
+    List.iter (fun ((col : Sql.col_name), _) ->
+      match col.tname with
+      | Some t when t <> f ->
+        fail "UPDATE ... FROM assigns to %s only, not to %s"
+          (Sql.show_table_name f) (Sql.show_table_name t)
+      | Some _ | None -> ()) ss;
+    let target =
+      { rsrc_schema = Schema.Source.of_schema ~sources:[f] s; rsrc_params = [];
+        rsrc_tables = [(f, s)]; rsrc_aliases = []; rsrc_dynamic = [];
+        rsrc_physical_table = Some { Sql.table = f; alias = None };
+        rsrc_annotations = { no_stmt_annotations with src_tbls = [ f, s ] } }
+    in
+    let src = resolve_source { env with scope = Subquery } ((`Nested from), None) in
+    let (params, annotations) = update_from_tables ~env ~target [target; src] ss w in
+    (* only the target is written, so it is a single-table update *)
+    [], params, Update (Some table), annotations
   | Select select -> 
     let (schema, params, kind, annotations) = eval_select_full empty_env select in
     List.map drop_sources schema, params, kind, annotations
