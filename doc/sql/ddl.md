@@ -131,6 +131,21 @@ DROP TYPE mood;
 
 Enum types get the same treatment as inline `ENUM(...)` columns. See [Literals](./literals.md) for enum literal validation and the OCaml mapping to polymorphic variants.
 
+`ALTER TYPE ... ADD VALUE` adds a constructor to an enum type. Columns already
+declared with that type follow it, so queries written after the ALTER may use the
+new value:
+
+```sql
+CREATE TYPE kind AS ENUM ('Jig', 'Reel');
+CREATE TABLE tune (kind kind NOT NULL);
+ALTER TYPE kind ADD VALUE IF NOT EXISTS 'Air';
+-- 'Air' is accepted here
+SELECT * FROM tune WHERE kind = 'Air';
+```
+
+Only columns declared with that named type are affected; an inline `ENUM(...)` column
+is not. Without `IF NOT EXISTS`, adding a value the type already has is an error.
+
 `ALTER TYPE ... RENAME TO` rekeys the type registry, so the type is known under its
 new name from then on:
 
