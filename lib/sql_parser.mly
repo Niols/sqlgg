@@ -400,11 +400,16 @@ source_alias: AS? name=located(ident) names=sequence(ident)? { name, names }
 maybe_parenth(X): x=X | LPAREN x=X RPAREN { x }
 
 alter_column_pg_spec:
-  | TYPE t=located_sql_type { Alter_column_pg.Set_type t }
+  | TYPE t=located_sql_type u=alter_column_using? { Alter_column_pg.Set_type (t, u) }
   | SET NOT NULL { Alter_column_pg.Set_not_null }
   | DROP NOT NULL { Alter_column_pg.Drop_not_null }
   | SET DEFAULT default_value { Alter_column_pg.Set_default }
   | DROP DEFAULT { Alter_column_pg.Drop_default }
+
+(* PostgreSQL: ALTER COLUMN ... TYPE t USING <expr>. The expression is parsed so
+   that it is syntax-checked, then only its source text is kept. *)
+alter_column_using: USING _e=expr
+  { { Alter_column_pg.using_sql = Parser_state.extract_source ($startofs(_e), $endofs(_e)) } }
 
 alter_action: ADD COLUMN? col=maybe_parenth(column_def) pos=alter_pos { `Add (col,pos) }
             | ADD PRIMARY KEY cols=sequence(ident) { `AddPrimaryKey cols }

@@ -85,6 +85,14 @@ ALTER TABLE users MODIFY COLUMN name VARCHAR(500) NOT NULL;
 ALTER TABLE users RENAME COLUMN name TO full_name;
 ```
 
+`ALTER COLUMN ... TYPE` accepts PostgreSQL's `USING` clause. The expression is parsed
+and kept as source text so migrations can re-emit it, but it is not resolved against
+the table or type-checked:
+
+```sql
+ALTER TABLE tune ALTER COLUMN kind TYPE kind_new USING kind;
+```
+
 PostgreSQL's `RENAME CONSTRAINT` is accepted too. sqlgg does not track constraints by
 name, so it only checks the syntax and leaves the schema untouched:
 

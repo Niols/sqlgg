@@ -257,7 +257,7 @@ let alter_column_pg name ~col_name (change : Sql.Alter_column_pg.t) =
     $ map_extra (update NotNull)
   in
   let f = match change with
-    | Set_type { Sql.value = kind; _ } ->
+    | Set_type ({ Sql.value = kind; _ }, _) ->
       fun c ->
         { c with source_kind = Some kind;
           attr = { c.attr with domain =

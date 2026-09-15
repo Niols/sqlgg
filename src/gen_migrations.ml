@@ -166,7 +166,15 @@ let action_to_sql_fragment ~default_sql_lookup (action : Sql.alter_action) = mat
   | `AlterColumnPG (col_name, change) ->
     sprintf "ALTER COLUMN %s %s" (quote_id col_name)
       (match change.Sql.value with
-      | Sql.Alter_column_pg.Set_type t -> "TYPE " ^ source_type_kind_to_sql t.Sql.value.Sql.collated
+      | Sql.Alter_column_pg.Set_type (t, using) ->
+        let ty = "TYPE " ^ source_type_kind_to_sql t.Sql.value.Sql.collated in
+        (match using with
+         | None -> ty
+         | Some { Sql.Alter_column_pg.using_sql = Some sql } -> ty ^ " USING " ^ sql
+         | Some { using_sql = None } ->
+           fail "column `%s` has an ALTER COLUMN ... TYPE ... USING whose source SQL was \
+                 not captured; cannot serialize it for migration (write this migration by hand)"
+             col_name)
       | Set_not_null -> "SET NOT NULL"
       | Drop_not_null -> "DROP NOT NULL"
       | Set_default ->

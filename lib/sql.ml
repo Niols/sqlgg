@@ -1050,8 +1050,16 @@ type ttl_option =
   | `TtlEnable of string ] [@@deriving show {with_path=false}]
 
 module Alter_column_pg = struct
+  (* The USING clause of ALTER COLUMN ... TYPE. Only its source text is kept, so
+     that migrations can re-emit it verbatim; the expression itself is not
+     resolved or typed. [using_sql = None] means the clause was there but its
+     text could not be captured, which gen_migrations reports rather than
+     silently dropping a clause PostgreSQL needs. *)
+  type using = { using_sql : string option }
+    [@@deriving show {with_path=false}]
+
   type t =
-    | Set_type of Source_type.kind collated located
+    | Set_type of Source_type.kind collated located * using option
     | Set_not_null
     | Drop_not_null
     | Set_default
