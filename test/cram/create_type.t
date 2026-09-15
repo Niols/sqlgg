@@ -234,3 +234,124 @@ enum it resolved to at declaration time
   Failed : SELECT c FROM t WHERE c = 'z'
   Fatal error: exception Failure("types Union (a| b) and StringLiteral (z) for 'a do not match in 'a -> 'a -> Bool?? applied to (Union (a| b), StringLiteral (z))")
   [2]
+
+A user-defined type is a valid CAST target, which is how an enum is converted
+through text in PostgreSQL
+  $ sqlgg -gen caml -no-header -dialect=postgresql - <<'EOF' 2>&1
+  > CREATE TYPE "kind" AS ENUM ('Jig', 'Reel');
+  > CREATE TYPE "kind_new" AS ENUM ('Jig', 'Reel', 'Air');
+  > CREATE TABLE "tune" ("id" INTEGER NOT NULL, "kind" "kind" NOT NULL);
+  > ALTER TABLE "tune" ALTER COLUMN "kind" TYPE "kind_new" USING CAST(CAST("kind" AS TEXT) AS "kind_new");
+  > SELECT "id" FROM "tune" WHERE "kind" = 'Air';
+  > EOF
+  module Sqlgg (T : Sqlgg_traits.M) = struct
+  
+    module IO = Sqlgg_io.Blocking
+  
+    let create_type_kind db  =
+      T.execute_unprepared db (Sqlgg_traits.Query.make ~sql:("CREATE TYPE \"kind\" AS ENUM ('Jig', 'Reel')") ~name:"create_type_kind" ~kind:Sqlgg_traits.Query.(CreateType "kind") ())
+  
+    let create_type_kind_new db  =
+      T.execute_unprepared db (Sqlgg_traits.Query.make ~sql:("CREATE TYPE \"kind_new\" AS ENUM ('Jig', 'Reel', 'Air')") ~name:"create_type_kind_new" ~kind:Sqlgg_traits.Query.(CreateType "kind_new") ())
+  
+    let create_tune db  =
+      T.execute_unprepared db (Sqlgg_traits.Query.make ~sql:("CREATE TABLE \"tune\" (\"id\" INTEGER NOT NULL, \"kind\" \"kind\" NOT NULL)") ~name:"create_tune" ~kind:Sqlgg_traits.Query.(Create "tune") ())
+  
+    let alter_tune_3 db  =
+      T.execute_unprepared db (Sqlgg_traits.Query.make ~sql:("ALTER TABLE \"tune\" ALTER COLUMN \"kind\" TYPE \"kind_new\" USING CAST(CAST(\"kind\" AS TEXT) AS \"kind_new\")") ~name:"alter_tune_3" ~kind:Sqlgg_traits.Query.(Alter ["tune"]) ())
+  
+    let select_4 db  callback =
+      let invoke_callback stmt =
+        callback
+          ~id:(T.get_column_Int stmt 0)
+      in
+      T.select db (Sqlgg_traits.Query.make ~sql:("SELECT \"id\" FROM \"tune\" WHERE \"kind\" = 'Air'") ~name:"select_4" ~kind:Sqlgg_traits.Query.(Select Nat) ()) T.no_params invoke_callback
+  
+    module Fold = struct
+      let select_4 db  callback acc =
+        let invoke_callback stmt =
+          callback
+            ~id:(T.get_column_Int stmt 0)
+        in
+        let r_acc = ref acc in
+        IO.(>>=) (T.select db (Sqlgg_traits.Query.make ~sql:("SELECT \"id\" FROM \"tune\" WHERE \"kind\" = 'Air'") ~name:"select_4" ~kind:Sqlgg_traits.Query.(Select Nat) ()) T.no_params (fun x -> r_acc := invoke_callback x !r_acc))
+        (fun () -> IO.return !r_acc)
+  
+    end (* module Fold *)
+    
+    module List = struct
+      let select_4 db  callback =
+        let invoke_callback stmt =
+          callback
+            ~id:(T.get_column_Int stmt 0)
+        in
+        let r_acc = ref [] in
+        IO.(>>=) (T.select db (Sqlgg_traits.Query.make ~sql:("SELECT \"id\" FROM \"tune\" WHERE \"kind\" = 'Air'") ~name:"select_4" ~kind:Sqlgg_traits.Query.(Select Nat) ()) T.no_params (fun x -> r_acc := invoke_callback x :: !r_acc))
+        (fun () -> IO.return (List.rev !r_acc))
+  
+    end (* module List *)
+  end (* module Sqlgg *)
+
+Casting to a type that does not exist says so
+  $ sqlgg -gen none -dialect=postgresql - <<'EOF' 2>&1
+  > CREATE TABLE t (x TEXT NOT NULL);
+  > SELECT CAST(x AS bogus_type) FROM t;
+  > EOF
+  ==> SELECT CAST(x AS bogus_type) FROM t
+  Position 1:28 Tokens: ) FROM t
+  Error: no such type "bogus_type"
+  Errors encountered, no code generated
+  [1]
+
+Integer CAST targets, with their signedness
+  $ sqlgg -gen caml -no-header -dialect=postgresql - <<'EOF' 2>&1
+  > CREATE TABLE t (x TEXT NOT NULL);
+  > SELECT CAST(x AS INTEGER), CAST(x AS SMALLINT), CAST(x AS BIGINT), CAST(x AS BIGINT UNSIGNED) FROM t;
+  > EOF
+  module Sqlgg (T : Sqlgg_traits.M) = struct
+  
+    module IO = Sqlgg_io.Blocking
+  
+    let create_t db  =
+      T.execute_unprepared db (Sqlgg_traits.Query.make ~sql:("CREATE TABLE t (x TEXT NOT NULL)") ~name:"create_t" ~kind:Sqlgg_traits.Query.(Create "t") ())
+  
+    let select_1 db  callback =
+      let invoke_callback stmt =
+        callback
+          ~r:(T.get_column_Int stmt 0)
+          ~r0:(T.get_column_Int stmt 1)
+          ~r1:(T.get_column_Int stmt 2)
+          ~r2:(T.get_column_UInt64 stmt 3)
+      in
+      T.select db (Sqlgg_traits.Query.make ~sql:("SELECT CAST(x AS INTEGER), CAST(x AS SMALLINT), CAST(x AS BIGINT), CAST(x AS BIGINT UNSIGNED) FROM t") ~name:"select_1" ~kind:Sqlgg_traits.Query.(Select Nat) ()) T.no_params invoke_callback
+  
+    module Fold = struct
+      let select_1 db  callback acc =
+        let invoke_callback stmt =
+          callback
+            ~r:(T.get_column_Int stmt 0)
+            ~r0:(T.get_column_Int stmt 1)
+            ~r1:(T.get_column_Int stmt 2)
+            ~r2:(T.get_column_UInt64 stmt 3)
+        in
+        let r_acc = ref acc in
+        IO.(>>=) (T.select db (Sqlgg_traits.Query.make ~sql:("SELECT CAST(x AS INTEGER), CAST(x AS SMALLINT), CAST(x AS BIGINT), CAST(x AS BIGINT UNSIGNED) FROM t") ~name:"select_1" ~kind:Sqlgg_traits.Query.(Select Nat) ()) T.no_params (fun x -> r_acc := invoke_callback x !r_acc))
+        (fun () -> IO.return !r_acc)
+  
+    end (* module Fold *)
+    
+    module List = struct
+      let select_1 db  callback =
+        let invoke_callback stmt =
+          callback
+            ~r:(T.get_column_Int stmt 0)
+            ~r0:(T.get_column_Int stmt 1)
+            ~r1:(T.get_column_Int stmt 2)
+            ~r2:(T.get_column_UInt64 stmt 3)
+        in
+        let r_acc = ref [] in
+        IO.(>>=) (T.select db (Sqlgg_traits.Query.make ~sql:("SELECT CAST(x AS INTEGER), CAST(x AS SMALLINT), CAST(x AS BIGINT), CAST(x AS BIGINT UNSIGNED) FROM t") ~name:"select_1" ~kind:Sqlgg_traits.Query.(Select Nat) ()) T.no_params (fun x -> r_acc := invoke_callback x :: !r_acc))
+        (fun () -> IO.return (List.rev !r_acc))
+  
+    end (* module List *)
+  end (* module Sqlgg *)

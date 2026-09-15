@@ -46,3 +46,9 @@ let add_value ~if_not_exists name value =
     Hashtbl.replace registry name kind;
     kind
   | Some _ -> failwith (sprintf "type %S is not an enum, cannot add a value to it" name)
+
+(** Like [get], but reports an unknown type name instead of raising Not_found. *)
+let get_or_fail name =
+  match Hashtbl.find_opt registry name with
+  | Some kind -> kind
+  | None -> failwith (sprintf "no such type %S" name)

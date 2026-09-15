@@ -825,7 +825,7 @@ sql_type_flavor_plain:
   | NATIONAL? f=text_plain charset?                     { Source_type.Text f }
   | t=expr_sql_type_flavor { Source_type.Infer t }
   | ENUM ctors=sequence(TEXT) charset? { Source_type.Infer (make_enum_kind ctors) }
-  | name=ident { Source_type.User_type (name, User_types.get name) }
+  | name=ident { Source_type.User_type (name, User_types.get_or_fail name) }
 
 type_args: LPAREN INTEGER RPAREN UNSIGNED? | LPAREN INTEGER COMMA INTEGER RPAREN { }
 
@@ -864,6 +864,9 @@ cast_sql_type:
         | T_DOUBLE PRECISION? { Float }
         | blob_plain | T_VARBINARY int_arg? { Blob }
         | text_plain | text_var { Text }
+        | t=int_type { Source_type.kind_to_type_kind t }
+        (* a user-defined type is a legitimate cast target in PostgreSQL *)
+        | name=ident { User_types.get_or_fail name }
 
 compound_op:
   | UNION { `Union }
