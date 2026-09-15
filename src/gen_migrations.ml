@@ -64,6 +64,7 @@ let text_plain_name =
 
 let source_type_kind_to_sql (k : Sql.Source_type.kind) = match k with
   | Infer k -> type_kind_to_sql k
+  | User_type (name, _) -> name
   | Int { size; sign; display_width } ->
     let suffix = match sign with Signed -> "" | Unsigned -> " UNSIGNED" in
     with_len (int_size_name size) display_width ^ suffix
