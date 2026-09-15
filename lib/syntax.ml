@@ -2084,6 +2084,8 @@ let rec eval (stmt:Sql.stmt) =
      [], [], DropType name, no_stmt_annotations
   | AlterType (name, Type_rename_to new_name) ->
      User_types.rename name new_name;
+     (* columns declared with this type keep naming it *)
+     Tables.rename_user_type name ~new_name;
      (* the old name is the subject, as `Rename does for tables *)
      [], [], AlterType name, no_stmt_annotations
   | AlterType (name, Type_add_value { value; if_not_exists }) ->

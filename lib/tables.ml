@@ -280,16 +280,29 @@ let reset () = store := []
 let snapshot () : stored_table list = !store
 let restore (s : stored_table list) = store := s
 
-(** Point every column declared with the user-defined type [name] at the type's
-    new definition [kind], so that ALTER TYPE reaches columns that were declared
-    before it. Columns declared with an inline type are untouched. *)
-let refresh_user_type name ~kind =
-  let refresh_column c =
+(** Rewrite the [User_type] recorded on every column declared with the
+    user-defined type [name], leaving columns declared with an inline type, or
+    with a different named type, alone. *)
+let map_user_type name f =
+  let map_column c =
     match c.source_kind with
-    | Some ({ Sql.collated = Sql.Source_type.User_type (n, _); _ } as sk) when n = name ->
-      { c with
-        source_kind = Some { sk with Sql.collated = Sql.Source_type.User_type (n, kind) };
-        attr = { c.attr with Sql.domain = { c.attr.Sql.domain with Sql.Type.t = kind } } }
+    | Some ({ Sql.collated = Sql.Source_type.User_type (n, kind); _ } as sk) when n = name ->
+      f c sk kind
     | _ -> c
   in
-  store := List.map (fun t -> { t with columns = List.map refresh_column t.columns }) !store
+  store := List.map (fun t -> { t with columns = List.map map_column t.columns }) !store
+
+(** Point columns declared with [name] at the type's new definition, so that
+    ALTER TYPE ... ADD VALUE reaches columns declared before it. *)
+let refresh_user_type name ~kind =
+  map_user_type name (fun c sk _ ->
+    { c with
+      source_kind = Some { sk with Sql.collated = Sql.Source_type.User_type (name, kind) };
+      attr = { c.attr with Sql.domain = { c.attr.Sql.domain with Sql.Type.t = kind } } })
+
+(** Rename the type recorded on columns declared with [name], so that they keep
+    naming the type that ALTER TYPE ... RENAME TO moved. The definition is
+    unchanged: only the name moved. *)
+let rename_user_type name ~new_name =
+  map_user_type name (fun c sk kind ->
+    { c with source_kind = Some { sk with Sql.collated = Sql.Source_type.User_type (new_name, kind) } })

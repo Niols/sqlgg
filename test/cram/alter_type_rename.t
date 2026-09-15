@@ -38,8 +38,8 @@ The type is usable under its new name afterwards
   Errors encountered, no code generated
   [1]
 
-Columns declared before the rename keep the ctors they were given, so they are
-unaffected; only the registry is rekeyed
+Columns declared before the rename keep the same constructors, since a rename
+does not change the definition, but they now name the type under its new name
 
   $ sqlgg -gen none -dialect=postgresql - <<'EOF' 2>&1
   > CREATE TYPE k1 AS ENUM ('a', 'b');
@@ -105,3 +105,59 @@ Behind the same user_defined_type dialect gate as CREATE/DROP TYPE
   > EOF
   Warning: Feature UserDefinedType is not supported for dialect MySQL, proceeding anyway at 
   Warning: Feature UserDefinedType is not supported for dialect MySQL, proceeding anyway at 
+
+Because the column follows the rename, a later ADD VALUE on the new name still
+reaches it
+
+  $ sqlgg -gen none -dialect=postgresql - <<'EOF' 2>&1
+  > CREATE TYPE k1 AS ENUM ('a');
+  > CREATE TABLE t (c k1 NOT NULL);
+  > ALTER TYPE k1 RENAME TO k2;
+  > ALTER TYPE k2 ADD VALUE 'b';
+  > SELECT c FROM t WHERE c = 'b';
+  > EOF
+
+...and the schema records the new name, so DDL emitted for the table does not
+mention a type that no longer exists
+
+  $ cat > ren_base.sql <<'EOF'
+  > CREATE TYPE k1 AS ENUM ('a');
+  > EOF
+  $ cat > ren_target.sql <<'EOF'
+  > CREATE TYPE k1 AS ENUM ('a');
+  > CREATE TABLE t (c k1 NOT NULL);
+  > ALTER TYPE k1 RENAME TO k2;
+  > EOF
+  $ sqlgg -no-header -dialect postgresql -diff -now 20260101000000 -gen sql -ddl-as-migration -base ren_base.sql -target ren_target.sql
+  -- [sqlgg] generated
+  -- [sqlgg] id=20260101000000_create_t
+  CREATE TABLE `t` (`c` k2 NOT NULL);
+  DROP TABLE `t`;
+
+Columns of a different named type are left alone by the rename
+
+  $ sqlgg -gen none -dialect=postgresql - <<'EOF' 2>&1
+  > CREATE TYPE k1 AS ENUM ('a');
+  > CREATE TYPE other AS ENUM ('a');
+  > CREATE TABLE t (c k1 NOT NULL, o other NOT NULL);
+  > ALTER TYPE k1 RENAME TO k2;
+  > ALTER TYPE k2 ADD VALUE 'b';
+  > SELECT o FROM t WHERE o = 'b';
+  > EOF
+  Failed : SELECT o FROM t WHERE o = 'b'
+  Fatal error: exception Failure("types Union (a) and StringLiteral (b) for 'a do not match in 'a -> 'a -> Bool?? applied to (Union (a), StringLiteral (b))")
+  [2]
+
+The whole enum migration dance: add a new type, convert the column to it, drop
+the old type, rename the new one into its place, then extend it
+
+  $ sqlgg -gen none -dialect=postgresql - <<'EOF' 2>&1
+  > CREATE TYPE "kind" AS ENUM ('Jig', 'Reel');
+  > CREATE TABLE "tune" ("id" INTEGER NOT NULL, "kind" "kind" NOT NULL);
+  > CREATE TYPE "kind_new" AS ENUM ('Jig', 'Reel', 'Air');
+  > ALTER TABLE "tune" ALTER COLUMN "kind" TYPE "kind_new" USING "kind";
+  > DROP TYPE "kind";
+  > ALTER TYPE "kind_new" RENAME TO "kind";
+  > ALTER TYPE "kind" ADD VALUE IF NOT EXISTS 'March';
+  > SELECT "id" FROM "tune" WHERE "kind" = 'March';
+  > EOF
