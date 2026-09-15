@@ -153,7 +153,9 @@ new name from then on:
 ALTER TYPE kind_new RENAME TO kind;
 ```
 
-Columns declared before the rename keep the constructors they were given.
+Columns declared before the rename keep the same constructors, since a rename does
+not change the definition, but they follow the type to its new name, so a later
+`ADD VALUE` still reaches them.
 
 ## CREATE EXTENSION (PostgreSQL)
 
