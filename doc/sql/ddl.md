@@ -85,6 +85,13 @@ ALTER TABLE users MODIFY COLUMN name VARCHAR(500) NOT NULL;
 ALTER TABLE users RENAME COLUMN name TO full_name;
 ```
 
+PostgreSQL's `RENAME CONSTRAINT` is accepted too. sqlgg does not track constraints by
+name, so it only checks the syntax and leaves the schema untouched:
+
+```sql
+ALTER TABLE entry RENAME CONSTRAINT globally_unique_id_pkey TO pk_entry;
+```
+
 Dialect-specific forms such as PostgreSQL `ALTER COLUMN ... TYPE` or TiDB `TTL` are checked against [`-dialect`](./dialects.md).
 
 ## CREATE TYPE (PostgreSQL)

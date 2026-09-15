@@ -408,6 +408,7 @@ alter_action: ADD COLUMN? col=maybe_parenth(column_def) pos=alter_pos { `Add (co
             | RENAME either(TO,AS)? new_name=table_name { `RenameTable new_name }
             | RENAME COLUMN old_name=ident TO new_name=ident { `RenameColumn (old_name, new_name) }
             | RENAME index_or_key old_name=ident TO new_name=ident { `RenameIndex (old_name, new_name) }
+            | RENAME CONSTRAINT old_name=ident TO new_name=ident { `RenameConstraint (old_name, new_name, ($startofs, $endofs)) }
             | DROP INDEX name=ident { `DropIndex name }
             | DROP PRIMARY KEY { `DropPrimaryKey }
             | DROP COLUMN? col=ident drop_behavior? { `Drop col } (* FIXME behavior? *)

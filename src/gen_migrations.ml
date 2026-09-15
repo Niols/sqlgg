@@ -128,6 +128,8 @@ let action_to_sql_fragment ~default_sql_lookup (action : Sql.alter_action) = mat
     sprintf "RENAME TO %s" (quote_table_name new_name)
   | `RenameColumn (old_name, new_name) ->
     sprintf "RENAME COLUMN %s TO %s" (quote_id old_name) (quote_id new_name)
+  | `RenameConstraint (old_name, new_name, _) ->
+    sprintf "RENAME CONSTRAINT %s TO %s" (quote_id old_name) (quote_id new_name)
   | `RenameIndex (old_name, new_name) ->
     sprintf "RENAME INDEX %s TO %s" (quote_id old_name) (quote_id new_name)
   | `AddIndex { add_idx_name; add_idx_kind; add_idx_cols } ->

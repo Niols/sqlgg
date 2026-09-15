@@ -34,6 +34,7 @@ type feature =
   | AlterColumn [@as "alter_column"]
   | UserDefinedType [@as "user_defined_type"]
   | Extension [@as "extension"]
+  | RenameConstraint [@as "rename_constraint"]
 [@@deriving show { with_path = false }, enumerate, to_string, of_string]
 
 let show_feature x = 
@@ -155,6 +156,8 @@ let get_alter_column (change : Sql.Alter_column_pg.t) pos =
 let get_user_defined_type pos = only UserDefinedType [PostgreSQL] pos
 
 let get_extension pos = only Extension [PostgreSQL] pos
+
+let get_rename_constraint pos = only RenameConstraint [PostgreSQL] pos
 
 let get_default_expr ~kind ~expr pos =
   let open Sql in
@@ -382,6 +385,9 @@ and analyze_alter_action acc actions k = match actions with
         analyze_alter_action acc rest k
     | `TtlOptions (_, pos) | `RemoveTtl pos ->
         let acc = get_ttl pos :: acc in
+        analyze_alter_action acc rest k
+    | `RenameConstraint (_, _, pos) ->
+        let acc = get_rename_constraint pos :: acc in
         analyze_alter_action acc rest k
     | `Cache pos | `NoCache pos ->
         let acc = get_cached_table pos :: acc in

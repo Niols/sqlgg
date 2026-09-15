@@ -1064,6 +1064,7 @@ type alter_action = [
     | `RenameTable of table_name
     | `RenameColumn of string * string
     | `RenameIndex of string * string
+    | `RenameConstraint of string * string * Pos.t
     | `Drop of string
     | `Change of string * Alter_action_attr.t * alter_pos
     | `AddIndex of add_index

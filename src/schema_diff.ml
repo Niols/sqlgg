@@ -121,6 +121,7 @@ let action_of : Sql.alter_action -> Name.action = function
   | `RenameTable t -> action_on "rename_to" t.tn
   | `RenameColumn (o, n) -> rename "col" o n
   | `RenameIndex (o, n) -> rename "index" o n
+  | `RenameConstraint (o, n, _) -> rename "constraint" o n
   | `AddIndex { add_idx_name; add_idx_kind; _ } ->
     let v = verb "add" @ verb (index_kind_slug add_idx_kind) in
     Option.map_default (fun n -> Name.action v (Name.words n)) (Name.action v []) add_idx_name
