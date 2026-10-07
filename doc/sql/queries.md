@@ -44,6 +44,23 @@ SELECT name, email, age FROM users;
 - `email`: Text (nullable)
 - `age`: Int (nullable)
 
+### NULLS FIRST / NULLS LAST
+
+A sort key may say where NULLs go, independently of the sort direction:
+
+```sql
+SELECT name FROM users ORDER BY email NULLS FIRST;
+SELECT name FROM users ORDER BY email DESC NULLS LAST, age ASC NULLS FIRST;
+```
+
+This is PostgreSQL and SQLite only, and is checked against [`-dialect`](./dialects.md);
+MySQL and TiDB have no such clause, where you would write `ORDER BY email IS NULL, email`
+instead. It is accepted on an index column too, though sqlgg records neither the
+direction nor the placement there.
+
+`nulls` becomes a reserved word as a result, so it cannot be used as a column name.
+`last` remains usable as one. (`first` was already reserved, for `ALTER TABLE ... FIRST`.)
+
 ## INSERT
 
 ```bnf

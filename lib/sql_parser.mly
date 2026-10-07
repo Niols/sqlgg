@@ -48,7 +48,8 @@
        SHARED EXCLUSIVE NONE
        TTL TTL_ENABLE TTL_JOB_INTERVAL REMOVE CACHE NOCACHE
 %token FUNCTION PROCEDURE LANGUAGE RETURNS OUT INOUT BEGIN COMMENT
-%token <string> EXTENSION SCHEMA VERSION VALUE BEFORE
+%token <string> EXTENSION SCHEMA VERSION VALUE BEFORE LAST
+%token NULLS
 %token SECOND_MICROSECOND MINUTE_MICROSECOND MINUTE_SECOND
        HOUR_MICROSECOND HOUR_SECOND HOUR_MINUTE
        DAY_MICROSECOND DAY_SECOND DAY_MINUTE DAY_HOUR EXTRACT
@@ -275,7 +276,8 @@ routine_extra: LANGUAGE ident { }
 
 (* cf. ColId / unreserved_keyword in PostgreSQL's gram.y (TYPE_P is unreserved there too):
    https://github.com/postgres/postgres/blob/REL_18_0/src/backend/parser/gram.y#L17632 *)
-ident: x=IDENT | x=TYPE | x=EXTENSION | x=SCHEMA | x=VERSION | x=VALUE | x=BEFORE { x }
+ident: x=IDENT | x=TYPE | x=EXTENSION | x=SCHEMA | x=VERSION | x=VALUE | x=BEFORE
+     | x=LAST { x }
 
 table_ident: x=ident { x }
 qual_ident: x=ident { x }
@@ -288,7 +290,8 @@ func_ident: x=ident { x }
 %inline func_name: name=func_ident { Sql.make_table_name name }
                  | db=qual_ident DOT name=ident { Sql.make_table_name ~db name }
 index_prefix: LPAREN n=INTEGER RPAREN { n }
-index_column: name=ident index_prefix? c=collate? index_opclass? order_type? { make_collated ?collation:c ~collated:name ()}
+index_column: name=ident index_prefix? c=collate? index_opclass? order_type? nulls_order?
+  { make_collated ?collation:c ~collated:name ()}
 
 (* PostgreSQL index access method and per-column operator class. sqlgg does not
    use either, so both are accepted and discarded. *)
@@ -411,7 +414,13 @@ limit_t: LIMIT lim=int_or_param { make_limit [`Limit,lim] }
 
 limit: limit_t { fst $1 }
 
-order: ORDER BY l=commas(pair(expr,order_type?)) { l }
+order: ORDER BY l=commas(order_item) { l }
+order_item: e=expr d=order_type? n=located(nulls_order)? { (e, { dir = d; nulls = n }) }
+
+(* SQL:2003 null placement, after the direction as PostgreSQL spells it *)
+nulls_order: NULLS FIRST { Nulls_first }
+           | NULLS LAST { Nulls_last }
+
 order_type:
           | DESC | ASC { `Fixed }
           | param { `Param $1 }

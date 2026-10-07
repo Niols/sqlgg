@@ -1297,7 +1297,7 @@ and get_params_of_res_expr env e =
 
 and params_of_order order final_schema env =
   merge_params @@ List.map
-    (fun (order, direction) ->
+    (fun (order, { dir = direction; nulls = _ }) ->
        let env = { env with schema = update_schema_with_aliases env.schema final_schema ;  } in
        let (p1, annotations) = get_params_l { env with is_order_by = true } [ order ] in
        let p2 =

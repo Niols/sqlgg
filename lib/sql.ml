@@ -689,6 +689,9 @@ type alter_pos = [ `After of string | `Default | `First ] [@@deriving show {with
 
 type direction = [ `Fixed | `Param of param_id ] [@@deriving show]
 
+(* SQL:2003 null placement on a sort key: ORDER BY e [ASC|DESC] [NULLS FIRST|LAST] *)
+type nulls_order = Nulls_first | Nulls_last [@@deriving show]
+
 type cte_supported_compound_op = [ `Union | `Union_all ] [@@deriving show]
 
 type compound_op = [ cte_supported_compound_op | `Except | `Intersect ] [@@deriving show]
@@ -734,7 +737,10 @@ and row_values = {
   row_order: order;
   row_limit: limit option;
 }
-and order = (expr * direction option) list
+(* the modifiers of one ORDER BY item, kept as a record so that adding one does
+   not disturb the many places that only want the expression *)
+and order_modifiers = { dir : direction option; nulls : nulls_order located option }
+and order = (expr * order_modifiers) list
 and agg_with_order_kind = 
     | Group_concat
     | Json_arrayagg

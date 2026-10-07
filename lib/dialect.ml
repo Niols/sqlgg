@@ -38,6 +38,7 @@ type feature =
   | Extension [@as "extension"]
   | RenameConstraint [@as "rename_constraint"]
   | UpdateFrom [@as "update_from"]
+  | NullsOrder [@as "nulls_order"]
 [@@deriving show { with_path = false }, enumerate, to_string, of_string]
 
 let show_feature x = 
@@ -170,6 +171,16 @@ let get_rename_constraint pos = only RenameConstraint [PostgreSQL] pos
 (* SQLite has had UPDATE ... FROM since 3.33 *)
 let get_update_from pos = only UpdateFrom [PostgreSQL; SQLite] pos
 
+(* MySQL and TiDB have no NULLS FIRST|LAST; there you spell it `ORDER BY e IS NULL, e` *)
+let get_nulls_order pos = only NullsOrder [PostgreSQL; SQLite] pos
+
+(* one check per ORDER BY item that carries an explicit null placement *)
+let nulls_order_gates order =
+  List.filter_map (fun ((_ : Sql.expr), (m : Sql.order_modifiers)) ->
+    match m.nulls with
+    | Some { Sql.pos; _ } -> Some (get_nulls_order pos)
+    | None -> None) order
+
 let get_default_expr ~kind ~expr pos =
   let open Sql in
   let tidb_only_functions =
@@ -277,6 +288,7 @@ and analyze_row_values acc rvs k = match rvs with
       | RowExprList expr_lists -> List.concat expr_lists
       | RowParam _ -> []
     in
+    let acc = nulls_order_gates row_order @ acc in
     let order_exprs = List.map fst row_order in
     analyze_expr acc (constructor_exprs @ order_exprs) (fun acc -> analyze_row_values acc rest k)
 
@@ -328,6 +340,7 @@ and analyze_select_complete acc scs k = match scs with
     in
     let all_selects = core :: List.map snd others in
     analyze_select acc all_selects (fun acc ->
+      let acc = nulls_order_gates order @ acc in
       let order_exprs = List.map fst order in
       analyze_expr acc order_exprs (fun acc ->
         analyze_select_complete acc rest k))
@@ -475,6 +488,7 @@ let rec analyze stmt =
   | Update (_, assignments, where_opt, order, _) ->
       let aes = List.map snd assignments in
       analyze_assignment_expr acc aes (fun acc ->
+        let acc = nulls_order_gates order @ acc in
         let exprs = option_list where_opt @ List.map fst order in
         analyze_expr acc exprs List.rev)
   | UpdateFrom (_, assignments, from, where_opt) ->
@@ -487,6 +501,7 @@ let rec analyze stmt =
       analyze_nested acc [from] (fun acc ->
         let aes = List.map snd assignments in
         analyze_assignment_expr acc aes (fun acc ->
+          let acc = nulls_order_gates order @ acc in
           let exprs = option_list where_opt @ List.map fst order in
           analyze_expr acc exprs List.rev))
   | Select select_full ->

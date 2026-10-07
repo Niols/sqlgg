@@ -102,6 +102,7 @@ let keywords =
    "key",KEY;
    "lag", LAG;
    "language", LANGUAGE;
+   "last", LAST "last";
    "last_value", LAST_VALUE;
    "lead", LEAD;
    "like", LIKE;
@@ -124,6 +125,7 @@ let keywords =
    "nothing", NOTHING;
    "nowait", NOWAIT;
    "null",NULL;
+   "nulls", NULLS;
    "of", OF;
    "offset",OFFSET;
    "on",ON;
